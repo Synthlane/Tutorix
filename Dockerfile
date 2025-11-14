@@ -29,6 +29,18 @@ COPY --chown=frappe:frappe apps/frappe /workspace/frappe-bench/apps/frappe
 COPY --chown=frappe:frappe apps/payments /workspace/frappe-bench/apps/payments  
 COPY --chown=frappe:frappe apps/lms /workspace/frappe-bench/apps/lms
 
+# The frappe repo vendors a bunch of JS/CSS libraries under frappe/public/js/lib.
+# In some clones these folders are missing (to keep the repo light), which causes
+# `bench build` to fail and leaves CSS/JS assets unbuilt. Fetch them from upstream
+# if the directory is absent so that every image build has the required sources.
+RUN if [ ! -d "/workspace/frappe-bench/apps/frappe/frappe/public/js/lib" ]; then \
+        echo "Downloading frappe/public/js/lib from upstream (version-15)..." && \
+        git clone --depth 1 --branch version-15 https://github.com/frappe/frappe.git /tmp/frappe-src && \
+        mkdir -p /workspace/frappe-bench/apps/frappe/frappe/public/js/lib && \
+        cp -a /tmp/frappe-src/frappe/public/js/lib/. /workspace/frappe-bench/apps/frappe/frappe/public/js/lib/ && \
+        rm -rf /tmp/frappe-src; \
+    fi
+
 # Install the apps into the bench virtual environment
 RUN ./env/bin/pip install --no-cache-dir -e ./apps/frappe && \
     ./env/bin/pip install --no-cache-dir -e ./apps/payments && \
