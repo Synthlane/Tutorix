@@ -232,6 +232,9 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - sites_data:/var/www/sites:ro
+      - ./apps/frappe:/workspace/frappe-bench/apps/frappe:ro
+      - ./apps/payments:/workspace/frappe-bench/apps/payments:ro
+      - ./apps/lms:/workspace/frappe-bench/apps/lms:ro
     ports:
       - "80:80"
       - "443:443"
