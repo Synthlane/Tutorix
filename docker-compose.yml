@@ -1,0 +1,249 @@
+services:
+  # Database
+  mariadb:
+    image: mariadb:10.6
+    environment:
+      MYSQL_ROOT_PASSWORD: synthlane_root_pass
+      MYSQL_DATABASE: synthlane_db
+      MYSQL_USER: synthlane_user
+      MYSQL_PASSWORD: synthlane_pass
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./mariadb.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    ports:
+      - "3306:3306"
+    restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psynthlane_root_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  # Redis Cache
+  redis-cache:
+    image: redis:7-alpine
+    volumes:
+      - redis_cache_data:/data
+      - ./config/redis_cache.conf:/usr/local/etc/redis/redis.conf:ro
+    ports:
+      - "13001:6379"
+    restart: unless-stopped
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+  # Redis Queue
+  redis-queue:
+    image: redis:7-alpine
+    volumes:
+      - redis_queue_data:/data
+      - ./config/redis_queue.conf:/usr/local/etc/redis/redis.conf:ro
+    ports:
+      - "11001:6379"
+    restart: unless-stopped
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+  # Redis SocketIO
+  redis-socketio:
+    image: redis:7-alpine
+    volumes:
+      - redis_socketio_data:/data
+    ports:
+      - "13002:6379"
+    restart: unless-stopped
+
+  # Frappe Backend
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - FRAPPE_SITE=tutorix.local
+      - MYSQL_ROOT_PASSWORD=synthlane_root_pass
+      - MYSQL_DATABASE=synthlane_db
+      - MYSQL_USER=synthlane_user
+      - MYSQL_PASSWORD=synthlane_pass
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - sites_data:/workspace/frappe-bench/sites
+      - logs_data:/workspace/frappe-bench/logs
+      # Mount apps for hot-reloading
+      - ./apps/frappe:/workspace/frappe-bench/apps/frappe
+      - ./apps/payments:/workspace/frappe-bench/apps/payments
+      - ./apps/lms:/workspace/frappe-bench/apps/lms
+    ports:
+      - "8000:8000"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+      redis-queue:
+        condition: service_started
+      redis-socketio:
+        condition: service_started
+    restart: unless-stopped
+    command: ["/workspace/frappe-bench/start.sh"]
+
+  # Background Scheduler
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - FRAPPE_SITE=tutorix.local
+      - MYSQL_ROOT_PASSWORD=synthlane_root_pass
+      - MYSQL_DATABASE=synthlane_db
+      - MYSQL_USER=synthlane_user
+      - MYSQL_PASSWORD=synthlane_pass
+    volumes:
+      - sites_data:/workspace/frappe-bench/sites
+      - logs_data:/workspace/frappe-bench/logs
+      # Mount apps for hot-reloading
+      - ./apps/frappe:/workspace/frappe-bench/apps/frappe
+      - ./apps/payments:/workspace/frappe-bench/apps/payments
+      - ./apps/lms:/workspace/frappe-bench/apps/lms
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+      redis-queue:
+        condition: service_started
+    restart: unless-stopped
+    command: ["bash", "-c", "cd /workspace/frappe-bench && ls -la && exec bench schedule"]
+
+  # Background Worker
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - FRAPPE_SITE=tutorix.local
+      - MYSQL_ROOT_PASSWORD=synthlane_root_pass
+      - MYSQL_DATABASE=synthlane_db
+      - MYSQL_USER=synthlane_user
+      - MYSQL_PASSWORD=synthlane_pass
+    volumes:
+      - sites_data:/workspace/frappe-bench/sites
+      - logs_data:/workspace/frappe-bench/logs
+      # Mount apps for hot-reloading
+      - ./apps/frappe:/workspace/frappe-bench/apps/frappe
+      - ./apps/payments:/workspace/frappe-bench/apps/payments
+      - ./apps/lms:/workspace/frappe-bench/apps/lms
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+      redis-queue:
+        condition: service_started
+    restart: unless-stopped
+    command: ["bash", "-c", "cd /workspace/frappe-bench && exec bench worker --queue default,short,long"]
+
+  # SocketIO Server
+  socketio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - FRAPPE_SITE=tutorix.local
+      - MYSQL_ROOT_PASSWORD=synthlane_root_pass
+      - MYSQL_DATABASE=synthlane_db
+      - MYSQL_USER=synthlane_user
+      - MYSQL_PASSWORD=synthlane_pass
+    volumes:
+      - sites_data:/workspace/frappe-bench/sites
+      - logs_data:/workspace/frappe-bench/logs
+      # Mount apps for hot-reloading
+      - ./apps/frappe:/workspace/frappe-bench/apps/frappe
+      - ./apps/payments:/workspace/frappe-bench/apps/payments
+      - ./apps/lms:/workspace/frappe-bench/apps/lms
+    ports:
+      - "9000:9000"
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+      redis-queue:
+        condition: service_started
+      redis-socketio:
+        condition: service_started
+    restart: unless-stopped
+    command: ["bash", "-c", "cd /workspace/frappe-bench && exec node apps/frappe/socketio.js"]
+
+  # Asset Watcher (for frontend hot-reloading)
+  watch:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - FRAPPE_SITE=tutorix.local
+      - MYSQL_ROOT_PASSWORD=synthlane_root_pass
+      - MYSQL_DATABASE=synthlane_db
+      - MYSQL_USER=synthlane_user
+      - MYSQL_PASSWORD=synthlane_pass
+    volumes:
+      - sites_data:/workspace/frappe-bench/sites
+      - logs_data:/workspace/frappe-bench/logs
+      # Mount apps for hot-reloading
+      - ./apps/frappe:/workspace/frappe-bench/apps/frappe
+      - ./apps/payments:/workspace/frappe-bench/apps/payments
+      - ./apps/lms:/workspace/frappe-bench/apps/lms
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis-cache:
+        condition: service_started
+      redis-queue:
+        condition: service_started
+    restart: unless-stopped
+    command: ["bash", "-c", "cd /workspace/frappe-bench && exec bench watch"]
+
+  # JSON DocType Reload Watcher (for automatic reload-doc on JSON changes)
+  reload-watcher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - FRAPPE_SITE=tutorix.local
+      - MYSQL_ROOT_PASSWORD=synthlane_root_pass
+      - MYSQL_DATABASE=synthlane_db
+      - MYSQL_USER=synthlane_user
+      - MYSQL_PASSWORD=synthlane_pass
+    volumes:
+      - sites_data:/workspace/frappe-bench/sites
+      - logs_data:/workspace/frappe-bench/logs
+      # Mount apps for hot-reloading
+      - ./apps/frappe:/workspace/frappe-bench/apps/frappe
+      - ./apps/payments:/workspace/frappe-bench/apps/payments
+      - ./apps/lms:/workspace/frappe-bench/apps/lms
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      backend:
+        condition: service_started
+    restart: unless-stopped
+    command: ["bash", "-c", "cd /workspace/frappe-bench && exec python3 reload-doc-watcher.py"]
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - sites_data:/var/www/sites:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - socketio
+    restart: unless-stopped
+
+volumes:
+  mariadb_data:
+  redis_cache_data:
+  redis_queue_data:
+  redis_socketio_data:
+  sites_data:
+  logs_data:
