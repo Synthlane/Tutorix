@@ -124,7 +124,7 @@
 							@click="redirectToWebsite()"
 						/>
 					</Tooltip>
-					<Tooltip v-if="showOnboarding" :text="__('Help')">
+					<Tooltip v-if="enableHelpCenter && showOnboarding" :text="__('Help')">
 						<CircleHelp
 							class="size-4 stroke-1.5 text-ink-gray-7 cursor-pointer"
 							@click="
@@ -152,17 +152,17 @@
 			</div>
 		</div>
 		<HelpModal
-			v-if="showOnboarding && showHelpModal"
+			v-if="enableHelpCenter && showOnboarding && showHelpModal"
 			v-model="showHelpModal"
 			v-model:articles="articles"
 			appName="learning"
-			title="Frappe Learning"
+			title="Tutorix Learning"
 			:logo="LMSLogo"
 			:afterSkip="(step) => capture('onboarding_step_skipped_' + step)"
 			:afterSkipAll="() => capture('onboarding_steps_skipped')"
 			:afterReset="(step) => capture('onboarding_step_reset_' + step)"
 			:afterResetAll="() => capture('onboarding_steps_reset')"
-			docsLink="https://docs.frappe.io/learning"
+			docsLink="https://synthlane.com/contact"
 		/>
 		<IntermediateStepModal
 			v-model="showIntermediateModal"
@@ -237,6 +237,7 @@ const isInstructor = ref(false)
 const pageToEdit = ref(null)
 const settingsStore = useSettings()
 const { sidebarSettings } = settingsStore
+const enableHelpCenter = false
 const showOnboarding = ref(false)
 const showIntermediateModal = ref(false)
 const currentStep = ref({})
@@ -671,6 +672,7 @@ const articles = ref([
 ])
 
 const setUpOnboarding = () => {
+	if (!enableHelpCenter) return
 	if (userResource.data?.is_system_manager) {
 		onboardingDetails = useOnboarding('learning')
 		onboardingDetails.setUp(steps)

@@ -70,6 +70,8 @@ services:
       - ./apps/frappe:/workspace/frappe-bench/apps/frappe
       - ./apps/payments:/workspace/frappe-bench/apps/payments
       - ./apps/lms:/workspace/frappe-bench/apps/lms
+      # Override start.sh with updated version
+      - ./start.sh:/workspace/frappe-bench/start.sh
     ports:
       - "8000:8000"
     depends_on:

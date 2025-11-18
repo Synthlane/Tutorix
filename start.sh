@@ -80,15 +80,10 @@ if [ -d "apps/lms/frontend" ] && [ ! -d "apps/lms/frontend/node_modules" ] && [ 
   cd apps/lms/frontend && yarn install && cd ../../..
 fi
 
-# Build assets for all apps (including Frappe login UI)
-echo "Building assets..."
-bench build --force
-
-# Build LMS frontend assets explicitly
-if [ -d "apps/lms/frontend" ] && [ -f "apps/lms/frontend/package.json" ]; then
-  echo "Building LMS frontend assets..."
-  cd apps/lms/frontend && yarn build && cd ../../..
-fi
+# Skip asset build - assets should already be built in Docker image
+# Building assets in runtime causes OOM issues, so we skip it
+echo "Skipping asset build (assets should be pre-built in Docker image)..."
+echo "If assets are missing, they will be built on-demand by the watch service."
 
 # Clear cache
 echo "Clearing cache..."

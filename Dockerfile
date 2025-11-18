@@ -1,5 +1,7 @@
 FROM frappe/bench:latest
 
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
 USER root
 
 # Install additional dependencies

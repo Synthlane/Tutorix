@@ -136,7 +136,7 @@ const tabsStructure = computed(() => {
 							doctype: 'Livecode URL',
 							type: 'text',
 							description:
-								'https://docs.frappe.io/learning/falcon-self-hosting-guide',
+								'https://synthlane.com',
 						},
 						{
 							label: 'Batch Confirmation Email Template',

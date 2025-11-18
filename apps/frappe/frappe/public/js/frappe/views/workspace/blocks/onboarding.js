@@ -81,6 +81,8 @@ export default class Onboarding extends Block {
 		if (!block_data) return false;
 		this.wrapper.innerHTML = "";
 		block_data.in_customize_mode = !this.readOnly;
+		const steps = Array.isArray(block_data.items) ? block_data.items : [];
+
 		this.block_widget = frappe.widget.make_widget({
 			container: this.wrapper,
 			widget_type: "onboarding",
@@ -93,7 +95,7 @@ export default class Onboarding extends Block {
 			label: block_data.label,
 			title: block_data.title || __("Let's Get Started"),
 			subtitle: block_data.subtitle,
-			steps: block_data.items,
+			steps: steps,
 			success: block_data.success,
 			docs_url: block_data.docs_url,
 			user_can_dismiss: block_data.user_can_dismiss,

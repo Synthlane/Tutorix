@@ -371,7 +371,14 @@ const router = useRouter()
 const instructors = ref([])
 const related_courses = ref([])
 const app = getCurrentInstance()
-const { updateOnboardingStep } = useOnboarding('learning')
+let updateOnboardingStep = null
+try {
+	const onboarding = useOnboarding('learning')
+	updateOnboardingStep = onboarding?.updateOnboardingStep || null
+} catch (error) {
+	console.warn('Onboarding not available:', error)
+	updateOnboardingStep = null
+}
 const { $dialog } = app.appContext.config.globalProperties
 
 const props = defineProps({
@@ -446,19 +453,27 @@ onBeforeUnmount(() => {
 const courseCreationResource = createResource({
 	url: 'frappe.client.insert',
 	makeParams(values) {
-		return {
-			doc: {
-				doctype: 'LMS Course',
-				image: course.course_image?.file_url || '',
-				instructors: instructors.value.map((instructor) => ({
-					instructor: instructor,
-				})),
-				related_courses: related_courses.value.map((course) => ({
-					course: course,
-				})),
-				...values,
-			},
+		const doc = {
+			doctype: 'LMS Course',
+			image: course.course_image?.file_url || '',
+			...values,
 		}
+		
+		// Always include instructors (mandatory field)
+		doc.instructors = (instructors.value && Array.isArray(instructors.value) && instructors.value.length > 0)
+			? instructors.value.map((instructor) => ({
+				instructor: instructor,
+			}))
+			: []
+		
+		// Only include related_courses if there are any
+		if (related_courses.value && Array.isArray(related_courses.value) && related_courses.value.length > 0) {
+			doc.related_courses = related_courses.value.map((course) => ({
+				course: course,
+			}))
+		}
+		
+		return { doc }
 	},
 })
 
@@ -466,19 +481,33 @@ const courseEditResource = createResource({
 	url: 'frappe.client.set_value',
 	auto: false,
 	makeParams(values) {
+		const fieldname = {
+			image: course.course_image?.file_url || '',
+			...course,
+		}
+		
+		// Only include instructors if there are any
+		if (instructors.value && Array.isArray(instructors.value) && instructors.value.length > 0) {
+			fieldname.instructors = instructors.value.map((instructor) => ({
+				instructor: instructor,
+			}))
+		} else {
+			fieldname.instructors = []
+		}
+		
+		// Only include related_courses if there are any
+		if (related_courses.value && Array.isArray(related_courses.value) && related_courses.value.length > 0) {
+			fieldname.related_courses = related_courses.value.map((course) => ({
+				course: course,
+			}))
+		} else {
+			fieldname.related_courses = []
+		}
+		
 		return {
 			doctype: 'LMS Course',
 			name: values.course,
-			fieldname: {
-				image: course.course_image?.file_url || '',
-				instructors: instructors.value.map((instructor) => ({
-					instructor: instructor,
-				})),
-				related_courses: related_courses.value.map((course) => ({
-					course: course,
-				})),
-				...course,
-			},
+			fieldname,
 		}
 	},
 })
@@ -493,17 +522,27 @@ const courseResource = createResource({
 	},
 	auto: false,
 	onSuccess(data) {
+		// Initialize arrays first
+		instructors.value = []
+		related_courses.value = []
+		
 		Object.keys(data).forEach((key) => {
 			if (key == 'instructors') {
-				instructors.value = []
-				data.instructors.forEach((instructor) => {
-					instructors.value.push(instructor.instructor)
-				})
+				if (data.instructors && Array.isArray(data.instructors) && data.instructors.length > 0) {
+					data.instructors.forEach((instructor) => {
+						if (instructor && instructor.instructor) {
+							instructors.value.push(instructor.instructor)
+						}
+					})
+				}
 			} else if (key == 'related_courses') {
-				related_courses.value = []
-				data.related_courses.forEach((course) => {
-					related_courses.value.push(course.course)
-				})
+				if (data.related_courses && Array.isArray(data.related_courses) && data.related_courses.length > 0) {
+					data.related_courses.forEach((course) => {
+						if (course && course.course) {
+							related_courses.value.push(course.course)
+						}
+					})
+				}
 			} else if (Object.hasOwn(course, key)) course[key] = data[key]
 		})
 		let checkboxes = [
@@ -547,6 +586,12 @@ const validateFields = () => {
 }
 
 const submitCourse = () => {
+	// Validate that at least one instructor is selected
+	if (!instructors.value || !Array.isArray(instructors.value) || instructors.value.length === 0) {
+		toast.error(__('Please select at least one instructor'))
+		return
+	}
+	
 	validateFields()
 	if (courseResource.data) {
 		editCourse()
@@ -559,18 +604,26 @@ const createCourse = () => {
 	courseCreationResource.submit(course, {
 		onSuccess(data) {
 			updateMetaInfo('courses', data.name, meta)
-			if (user.data?.is_system_manager) {
-				updateOnboardingStep('create_first_course', true, false, () => {
-					localStorage.setItem('firstCourse', data.name)
-				})
+			if (user.data?.is_system_manager && updateOnboardingStep) {
+				try {
+					updateOnboardingStep('create_first_course', true, false, () => {
+						localStorage.setItem('firstCourse', data.name)
+					})
+				} catch (error) {
+					console.warn('Failed to update onboarding step:', error)
+					// Continue even if onboarding step update fails
+				}
 			}
 
 			capture('course_created')
 			toast.success(__('Course created successfully'))
-			router.push({
-				name: 'CourseForm',
-				params: { courseName: data.name },
-			})
+			// Use nextTick to ensure onboarding step update completes before navigation
+			setTimeout(() => {
+				router.push({
+					name: 'CourseForm',
+					params: { courseName: data.name },
+				})
+			}, 100)
 		},
 		onError(err) {
 			toast.error(err.messages?.[0] || err)
