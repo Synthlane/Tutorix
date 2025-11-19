@@ -1,7 +1,7 @@
 {
   "name": "frappe-framework",
   "scripts": {
-    "build": "node esbuild",
+    "build": "node init && node esbuild",
     "production": "node esbuild --production",
     "watch": "node esbuild --watch",
     "coverage:report": "npx nyc report --reporter=clover"

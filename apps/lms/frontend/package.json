@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node init && vite",
     "serve": "vite preview",
-    "build": "vite build --base=/assets/lms/frontend/ && yarn copy-html-entry",
+    "build": "node init && vite build --base=/assets/lms/frontend/ && yarn copy-html-entry",
     "copy-html-entry": "cp ../lms/public/frontend/index.html ../lms/www/lms.html"
   },
   "dependencies": {
