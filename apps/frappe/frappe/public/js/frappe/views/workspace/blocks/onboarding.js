@@ -75,6 +75,12 @@ export default class Onboarding extends Block {
 	}
 
 	make(block, block_name) {
+		// Safety check: ensure onboardings config exists
+		if (!this.config?.page_data?.onboardings?.items) {
+			console.warn('Onboarding config not available');
+			return false;
+		}
+		
 		let block_data = this.config.page_data["onboardings"].items.find((obj) => {
 			return obj.label == __(block_name);
 		});
