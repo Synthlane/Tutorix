@@ -159,8 +159,6 @@ sites/*/site_config.json
 sites/*/site_config_backup.json
 
 # Development files
-.env
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
@@ -211,3 +209,7 @@ dmypy.json
 
 # Frappe specific development files
 frappe-bench/
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+config.bat
