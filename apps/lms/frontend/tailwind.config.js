@@ -19,6 +19,9 @@ export default {
 				'2xl': '1600px',
 				'3xl': '1920px',
 			},
+			colors: {
+				'brand-orange': '#fd7e14',
+			},
 		},
 	},
 	plugins: [],

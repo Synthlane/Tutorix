@@ -16,3 +16,10 @@ const logoUrl = computed(() => {
 	return `${base}logo.svg`
 })
 </script>
+
+<style>
+.lms-logo {
+	/* Logo SVG now uses #fd7e14 directly - no filter needed */
+	transition: opacity 0.3s ease;
+}
+</style>

@@ -7,11 +7,11 @@
 	<div class="w-full px-5 pt-5 pb-10">
 		<div class="space-y-2">
 			<div class="flex items-center justify-between">
-				<div class="text-xl font-bold text-ink-gray-9">
-					{{ __('Hey') }}, {{ user.data?.full_name }} 👋
+				<div class="text-xl font-bold">
+					<span class="text-ink-gray-9">{{ __('Hey') }}</span>, <span class="text-brand-orange">{{ user.data?.full_name }}</span> <span class="text-brand-orange">👋</span>
 				</div>
 				<div>
-					<TabButtons v-if="isAdmin" v-model="currentTab" :buttons="tabs" />
+					<TabButtons v-if="isAdmin" v-model="currentTab" :buttons="tabs" class="tab-buttons-brand" />
 					<div
 						v-else
 						@click="showStreakModal = true"
@@ -156,3 +156,28 @@ usePageMeta(() => {
 	}
 })
 </script>
+
+<style scoped>
+/* Style TabButtons to use brand orange color for active tab text and icons */
+:deep(.tab-buttons-brand [aria-selected="true"]) {
+	color: #fd7e14 !important;
+}
+
+:deep(.tab-buttons-brand [aria-selected="true"] svg),
+:deep(.tab-buttons-brand [aria-selected="true"] path) {
+	color: #fd7e14 !important;
+	stroke: #fd7e14 !important;
+	fill: #fd7e14 !important;
+}
+
+/* Style all tab buttons text and icons to use brand orange */
+:deep(.tab-buttons-brand button) {
+	color: #fd7e14 !important;
+}
+
+:deep(.tab-buttons-brand button svg),
+:deep(.tab-buttons-brand button path) {
+	color: #fd7e14 !important;
+	stroke: #fd7e14 !important;
+}
+</style>

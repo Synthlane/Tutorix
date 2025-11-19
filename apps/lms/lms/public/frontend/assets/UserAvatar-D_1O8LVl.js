@@ -1,0 +1,2 @@
+import{h as a,o as r,w as u,b as l,u as t,Z as n,aG as i,_ as m}from"./index-CpSApRUj.js";const f={__name:"UserAvatar",props:{user:{type:Object,default:null},size:{type:String}},setup(e){return(s,c)=>(r(),a(t(m),{text:e.user.full_name},{default:u(()=>[e.user?(r(),a(t(n),i({key:0,class:"avatar border border-outline-gray-2 cursor-auto",label:e.user.full_name,image:e.user.user_image,size:e.size},s.$attrs),null,16,["label","image","size"])):l("",!0)]),_:1},8,["text"]))}};export{f as _};
+//# sourceMappingURL=UserAvatar-D_1O8LVl.js.map

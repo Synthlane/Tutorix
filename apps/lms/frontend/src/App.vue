@@ -54,3 +54,19 @@ watch(userResource, () => {
 	}
 })
 </script>
+
+<style>
+/* Brand orange color for Breadcrumbs component from frappe-ui */
+:global(.breadcrumbs),
+:global([class*="breadcrumb"]) {
+	color: #fd7e14 !important;
+}
+
+:global(.breadcrumbs a),
+:global([class*="breadcrumb"] a),
+:global(.breadcrumbs button),
+:global([class*="breadcrumb"] button),
+:global(.breadcrumbs span) {
+	color: #fd7e14 !important;
+}
+</style>

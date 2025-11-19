@@ -21,7 +21,7 @@
 				</header>
 				<div class="mt-5 mb-5">
 					<div class="px-5 md:px-10 pb-5 mb-5 space-y-5 border-b">
-						<div class="text-lg font-semibold mb-4 text-ink-gray-9">
+						<div class="text-lg font-semibold mb-4 text-brand-orange">
 							{{ __('Details') }}
 						</div>
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -138,7 +138,7 @@
 					</div>
 
 					<div class="px-5 md:px-10 pb-5 mb-5 space-y-5 border-b">
-						<div class="text-lg font-semibold text-ink-gray-9">
+						<div class="text-lg font-semibold text-brand-orange">
 							{{ __('Settings') }}
 						</div>
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -178,7 +178,7 @@
 					</div>
 
 					<div class="px-5 md:px-10 pb-5 mb-5 space-y-5 border-b">
-						<div class="text-lg font-semibold text-ink-gray-9">
+						<div class="text-lg font-semibold text-brand-orange">
 							{{ __('About the Course') }}
 						</div>
 						<FormControl
@@ -592,6 +592,22 @@ const submitCourse = () => {
 		return
 	}
 	
+	// Validate mandatory fields
+	if (!course.title || course.title.trim() === '') {
+		toast.error(__('Title is required'))
+		return
+	}
+	
+	if (!course.short_introduction || course.short_introduction.trim() === '') {
+		toast.error(__('Short introduction is required'))
+		return
+	}
+	
+	if (!course.description || course.description.trim() === '') {
+		toast.error(__('Description is required'))
+		return
+	}
+	
 	validateFields()
 	if (courseResource.data) {
 		editCourse()
@@ -626,7 +642,24 @@ const createCourse = () => {
 			}, 100)
 		},
 		onError(err) {
-			toast.error(err.messages?.[0] || err)
+			// Handle different error formats from Frappe
+			let errorMessage = __('An error occurred while creating the course')
+			if (err?.messages && Array.isArray(err.messages) && err.messages.length > 0) {
+				errorMessage = err.messages[0]
+			} else if (err?.message) {
+				errorMessage = err.message
+			} else if (typeof err === 'string') {
+				errorMessage = err
+			} else if (err?.exc_type === 'MandatoryError' && err?.exc) {
+				// Extract message from Frappe MandatoryError
+				try {
+					const excData = typeof err.exc === 'string' ? JSON.parse(err.exc) : err.exc
+					errorMessage = excData?.message || errorMessage
+				} catch {
+					errorMessage = err.exc || errorMessage
+				}
+			}
+			toast.error(errorMessage)
 		},
 	})
 }
@@ -642,7 +675,24 @@ const editCourse = () => {
 				toast.success(__('Course updated successfully'))
 			},
 			onError(err) {
-				toast.error(err.messages?.[0] || err)
+				// Handle different error formats from Frappe
+				let errorMessage = __('An error occurred while updating the course')
+				if (err?.messages && Array.isArray(err.messages) && err.messages.length > 0) {
+					errorMessage = err.messages[0]
+				} else if (err?.message) {
+					errorMessage = err.message
+				} else if (typeof err === 'string') {
+					errorMessage = err
+				} else if (err?.exc_type === 'MandatoryError' && err?.exc) {
+					// Extract message from Frappe MandatoryError
+					try {
+						const excData = typeof err.exc === 'string' ? JSON.parse(err.exc) : err.exc
+						errorMessage = excData?.message || errorMessage
+					} catch {
+						errorMessage = err.exc || errorMessage
+					}
+				}
+				toast.error(errorMessage)
 			},
 		}
 	)

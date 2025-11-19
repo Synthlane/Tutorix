@@ -216,11 +216,11 @@
 	<body class="sm:overscroll-y-none no-scrollbar">
 		<div id="app">
 			<div id="seo-content">
-				<h1>{{ meta.title }}</h1>
+				<h1>{% if meta.title|trim == '' %}Tutorix{% else %}{{ meta.title }}{% endif %}</h1>
 				<p>
-					{{ meta.description }}
+					{% if meta.description|trim == '' %}Learn anything, anywhere, anytime.{% else %}{{ meta.description }}{% endif %}
 				</p>
-				<a href="{{ meta.link }}">Know More</a>
+				<a href="{% if meta.link|trim == '' %}/courses{% else %}{{ meta.link }}{% endif %}">Know More</a>
 			</div>
 		</div>
 		<script>
